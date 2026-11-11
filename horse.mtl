@@ -1,0 +1,6 @@
+newmtl base_hoof_dark
+Kd 0.18039216 0.14901961 0.1254902
+newmtl base_deer_hide
+Kd 0.6117647 0.41960785 0.24705882
+newmtl base_obsidian
+Kd 0.13333334 0.101960786 0.1882353

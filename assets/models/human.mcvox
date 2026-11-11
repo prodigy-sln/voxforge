@@ -1,0 +1,114 @@
+schema = 1
+name   = "base:human"
+scale  = 16
+slice  = "z"
+
+[palette]
+"." = "empty"
+"s" = "base:obsidian"
+"f" = "base:flesh_pink"
+
+[[parts]]
+name = "torso"
+size = [4, 6, 1]
+origin = [2, 0, 0]
+
+[[parts]]
+name = "head"
+size = [4, 4, 1]
+origin = [2, 0, 0]
+attach = { to = "torso", at = [2, 6, 0] }
+
+[[parts]]
+name = "arm_l"
+size = [2, 6, 1]
+origin = [2, 6, 0]
+attach = { to = "torso", at = [0, 6, 0] }
+
+[[parts]]
+name = "arm_r"
+size = [2, 6, 1]
+origin = [0, 6, 0]
+attach = { to = "torso", at = [4, 6, 0] }
+
+[[parts]]
+name = "leg_l"
+size = [2, 6, 1]
+origin = [1, 6, 0]
+attach = { to = "torso", at = [1, 0, 0] }
+
+[[parts]]
+name = "leg_r"
+size = [2, 6, 1]
+origin = [1, 6, 0]
+attach = { to = "torso", at = [3, 0, 0] }
+
+[[layers]]
+part = "torso"
+z = 0
+grid = """
+ssss
+ssss
+ssss
+ssss
+ssss
+ssss
+"""
+
+[[layers]]
+part = "head"
+z = 0
+grid = """
+ffff
+ffff
+ffff
+ffff
+"""
+
+[[layers]]
+part = "arm_l"
+z = 0
+grid = """
+ss
+ff
+ff
+ff
+ff
+ff
+"""
+
+[[layers]]
+part = "arm_r"
+z = 0
+grid = """
+ss
+ff
+ff
+ff
+ff
+ff
+"""
+
+[[layers]]
+part = "leg_l"
+z = 0
+grid = """
+ss
+ss
+ss
+ss
+ff
+ff
+"""
+
+[[layers]]
+part = "leg_r"
+z = 0
+grid = """
+ss
+ss
+ss
+ss
+ff
+ff
+"""

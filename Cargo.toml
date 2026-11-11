@@ -1,0 +1,18 @@
+[package]
+name = "voxforge"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+
+[dependencies]
+glam = "0.29.0"
+image = { version = "0.25.0", default-features = false, features = ["png"] }
+mc-core = { path = "../MyCraft/crates/mc-core" }
+clap = { version = "4.5", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+dot_vox = "5.1.1"
+serde_json = "1.0"
+
+[dev-dependencies]
+tempfile = "3.10"
