@@ -33,6 +33,7 @@ use crate::texture::{
 };
 use crate::volume::{StateSelection, Volume, assemble};
 use crate::export::{write_vox, write_obj};
+use crate::gltf_export::{Ao, Colors, DEFAULT_AO_STRENGTH, GlbOptions, MeshMode, Unit, check_ao_strength, write_glb_with};
 
 /// Runs the tool over `argv`, writing to `out` and `err`.
 ///
@@ -401,6 +402,8 @@ struct Export<'a> {
     destination: &'a Path,
     /// Where material keys resolve from.
     materials: std::path::PathBuf,
+    /// The `.glb`-only options.
+    glb: GlbOptions,
 }
 
 impl<'a> Export<'a> {
@@ -409,7 +412,33 @@ impl<'a> Export<'a> {
             document: &asked.document,
             destination: &asked.out,
             materials: args::materials_of(asked.materials.as_ref()),
+            glb: GlbOptions {
+                mesh: asked.mesh,
+                unit: asked.unit,
+                colors: asked.colors,
+                ao: asked.ao,
+                ao_strength: asked.ao_strength,
+            },
         }
+    }
+}
+
+/// Refuses a `.glb`-only option given a non-default value for another format.
+fn glb_only(options: &GlbOptions, ext: &str, destination: &Path) -> Result<(), Fault> {
+    let given = [
+        ("mesh", options.mesh != MeshMode::default(), "merged".to_string()),
+        ("unit", options.unit != Unit::default(), "block".to_string()),
+        ("colors", options.colors != Colors::default(), "linear".to_string()),
+        ("ao", options.ao != Ao::default(), "vertex".to_string()),
+        ("ao-strength", options.ao_strength != DEFAULT_AO_STRENGTH, options.ao_strength.to_string()),
+    ];
+    match given.iter().find(|(_, non_default, _)| *non_default) {
+        Some((field, _, value)) => Err(Fault::about(
+            Origin::new(destination),
+            format!("`--{field} {value}` applies only to .glb exports, not .{ext}"),
+        )
+        .in_field(*field)),
+        None => Ok(()),
     }
 }
 
@@ -420,18 +449,27 @@ fn export(
     out: &mut dyn Write,
 ) -> Result<ExitCode, Fault> {
     let _origin = Origin::new(request.document);
+    let ext = request.destination.extension().and_then(|e| e.to_str()).unwrap_or("");
+    let ext = ext.to_lowercase();
+    check_ao_strength(request.glb.ao_strength, Origin::new(request.destination))?;
+    if ext == "vox" || ext == "obj" {
+        glb_only(&request.glb, &ext, request.destination)?;
+    }
     let model = load_document(request.document)?;
     let materials = load_materials(&request.materials)?;
     model.bind_materials(&materials)?;
     let volume = assemble(&model, states)?;
 
-use crate::gltf_export::write_glb;
-
-    let ext = request.destination.extension().and_then(|e| e.to_str()).unwrap_or("");
-    match ext.to_lowercase().as_str() {
+    let mut merged_stats = None;
+    match ext.as_str() {
         "vox" => write_vox(&volume, &materials, request.destination)?,
         "obj" => write_obj(&volume, &materials, request.destination)?,
-        "glb" => write_glb(&model, &materials, request.destination)?,
+        "glb" => {
+            let stats = write_glb_with(&model, &materials, request.destination, &request.glb)?;
+            if request.glb.mesh == MeshMode::Merged {
+                merged_stats = Some(stats);
+            }
+        }
         _ => {
             return Err(Fault::about(
                 Origin::new(request.destination),
@@ -441,5 +479,11 @@ use crate::gltf_export::write_glb;
     }
 
     said(writeln!(out, "Exported to {}", request.destination.display()), &Origin::new(request.destination))?;
+    if let Some(stats) = merged_stats {
+        said(
+            writeln!(out, "Merged mesh: {} vertices, {} triangles", stats.vertices, stats.triangles),
+            &Origin::new(request.destination),
+        )?;
+    }
     Ok(ExitCode::Success)
 }

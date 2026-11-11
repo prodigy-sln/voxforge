@@ -12,6 +12,7 @@ use clap::{Args, Parser, Subcommand};
 
 use crate::fault::{Fault, Origin};
 use crate::format::{PartName, StateName};
+use crate::gltf_export::{Ao, Colors, DEFAULT_AO_STRENGTH, MeshMode, Unit};
 use crate::volume::StateSelection;
 
 /// Where materials are read from when nobody says otherwise.
@@ -115,7 +116,7 @@ pub struct TextureArgs {
 pub struct ExportArgs {
     /// The `.mcvox` document to read.
     pub document: PathBuf,
-    /// Where to write the exported file (extension determines format: .vox, .obj).
+    /// Where to write the exported file (extension determines format: .vox, .obj, .glb).
     #[arg(long)]
     pub out: PathBuf,
     /// Where to resolve material keys from.
@@ -124,6 +125,21 @@ pub struct ExportArgs {
     /// Which state a part takes, as `part=state`. Repeatable.
     #[arg(long = "state")]
     pub states: Vec<String>,
+    /// .glb only: cubes = six faces per voxel, merged = hidden faces dropped and coplanar ones merged.
+    #[arg(long, value_enum, default_value_t = MeshMode::Cubes)]
+    pub mesh: MeshMode,
+    /// .glb only: positions in voxels, or in blocks (voxels divided by the model's scale).
+    #[arg(long, value_enum, default_value_t = Unit::Voxel)]
+    pub unit: Unit,
+    /// .glb only: vertex colours as declared (srgb), or converted to linear.
+    #[arg(long, value_enum, default_value_t = Colors::Srgb)]
+    pub colors: Colors,
+    /// .glb only: bake ambient occlusion into the vertex colours (vertex), or not (off).
+    #[arg(long, value_enum, default_value_t = Ao::Off)]
+    pub ao: Ao,
+    /// .glb only: how strongly --ao vertex darkens, from 0.0 to 1.0.
+    #[arg(long = "ao-strength", value_name = "N", default_value_t = DEFAULT_AO_STRENGTH, allow_negative_numbers = true)]
+    pub ao_strength: f32,
 }
 
 impl Command {

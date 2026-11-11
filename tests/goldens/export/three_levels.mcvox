@@ -1,0 +1,56 @@
+schema = 1
+name = "test:three"
+scale = 10
+slice = "y"
+
+[palette]
+"." = "empty"
+"r" = "test:red"
+"b" = "test:blue"
+
+[[parts]]
+name = "body"
+size = [2, 2, 2]
+origin = [0, 0, 0]
+
+[[parts]]
+name = "arm"
+size = [3, 1, 1]
+origin = [0, 0, 0]
+attach = { to = "body", at = [2, 0, 0] }
+
+[[parts]]
+name = "hand"
+size = [2, 1, 1]
+origin = [0, 0, 0]
+attach = { to = "arm", at = [3, 0, 0] }
+
+[[layers]]
+part = "body"
+y = 0
+grid = """
+rr
+rr
+"""
+
+[[layers]]
+part = "body"
+y = 1
+grid = """
+rr
+rb
+"""
+
+[[layers]]
+part = "arm"
+y = 0
+grid = """
+rrr
+"""
+
+[[layers]]
+part = "hand"
+y = 0
+grid = """
+bb
+"""
