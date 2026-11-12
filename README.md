@@ -8,7 +8,7 @@ This folder is a fork of `MyCraft/tools/voxforge`, taken at MyCraft commit `f483
 |---|---|---|
 | `preview`, `inspect`, `texture` | Same code as MyCraft at `f483a363` | Same, plus later changes |
 | `export` (`.vox`, `.obj`, `.glb`) | Yes | No |
-| `build` (texture sets from a manifest) | No | Yes (since 2026-08-21) |
+| `build` (texture sets from a manifest) | Yes, ported from MyCraft; hidden from `--help` so every help text stays as it was | Yes (since 2026-08-21) |
 | Default `--materials` | `assets/materials` | `content/base/materials` |
 | Default preview scale | 24 | 8 |
 | Depends on | `mc-core` by path (`../MyCraft/crates/mc-core`) | MyCraft workspace |
@@ -26,11 +26,15 @@ By default a part and an assembled model may reach 64 voxels on an axis. `--max-
 
 ## Tests
 
-`cargo test` does not compile as a whole. Run targets one at a time: `cargo test --test <name>`.
+Run targets one at a time with `cargo test --test <name>`. `cargo test` as a whole does not compile, and 9 tests fail (state of 2026-11-12). The other 223 pass.
 
-- `reference_golden` needs MyCraft's `mc-testkit`, which is not a dependency here.
-- `build_*` test the `build` command, which this fork does not have. They fail.
-- `export_glb` covers the export options and compares default output with files in `tests/goldens/export/` byte for byte.
+The failing tests were written for MyCraft's tree and need things this repository does not have. None was changed, skipped or special-cased.
+
+- `reference_golden` does not compile: it needs `mc-testkit`, a MyCraft crate. Adding it as a path dev-dependency compiles it but raises `image` in `Cargo.lock` from 0.25.9 to 0.25.10 (it needs Rust 1.88, the fork declares 1.85) and `moxcms` to 0.8, which changes the normal build, so it is not added. The test would still fail (next point).
+- `reference_golden`, one test in `command_line`, and the `build_writes_a_set` and `build_determinism` tests that use the shipped content root (4 + 1 tests) read `<package>/../../content/base/...` and `<package>/../../tools/voxforge/tests/goldens/...`. That is the MyCraft repository root when the package sits at `tools/voxforge`; here it is outside this repository. They pass when the package sits at `<root>/tools/voxforge` with `<root>/content/base` taken from MyCraft at commit `bdbb0214` (7 manifest entries; MyCraft's current 8 do not match the tests' count of 7).
+- Two tests in `texture_streams` (`a_single_face_texture_writes_its_image_and_prints_one_line_about_it`, `an_undeclared_face_set_writes_all_six_and_reports_each_faces_verdict`) run `texture` without `--pixels-per-voxel` and expect MyCraft's default of 8. This fork's default is 24 and must not change.
+
+The `build_*` tests pass except the five that read the shipped content root. `build_help` pins that the top-level help lists only the original commands. `export_glb` covers the export options and compares default output with files in `tests/goldens/export/` byte for byte.
 
 ## Users
 

@@ -75,6 +75,10 @@ pub enum Command {
     Texture(TextureArgs),
     /// Export a model to an external format like .vox or .obj.
     Export(ExportArgs),
+    /// Bake a manifest's entries into a named texture set.
+    // Hidden from `--help` so that the tool's help text stays as it was.
+    #[command(hide = true)]
+    Build(BuildArgs),
 }
 
 /// What `preview` was asked for.
@@ -137,6 +141,13 @@ pub struct TextureArgs {
     pub states: Vec<String>,
 }
 
+/// What `build` was asked for.
+#[derive(Debug, Args)]
+pub struct BuildArgs {
+    /// The manifest naming what to bake, and where it goes.
+    pub document: PathBuf,
+}
+
 /// What `export` was asked for.
 #[derive(Debug, Args)]
 pub struct ExportArgs {
@@ -177,6 +188,7 @@ impl Command {
             Self::Inspect(asked) => &asked.document,
             Self::Texture(asked) => &asked.document,
             Self::Export(asked) => &asked.document,
+            Self::Build(asked) => &asked.document,
         }
     }
 
@@ -203,6 +215,9 @@ impl Command {
             Self::Inspect(asked) => &asked.states,
             Self::Texture(asked) => &asked.states,
             Self::Export(asked) => &asked.states,
+            // A manifest states no part states: what it names is a whole model
+            // per entry, and a face of it.
+            Self::Build(_) => &[],
         }
     }
 }
