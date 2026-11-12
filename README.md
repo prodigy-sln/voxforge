@@ -20,6 +20,10 @@ The two defaults differ, so neither copy can replace the other without changing 
 - Other projects call this tool. Add behaviour as new options or commands; do not change existing defaults, formats or output.
 - Format, preview, inspect and texture changes belong in MyCraft's copy first.
 
+## Larger models
+
+By default a part and an assembled model may reach 64 voxels on an axis. `--max-extent <N>` (64 to 256, any command, before or after the command name, deliberately absent from `--help` so help texts stay unchanged) raises both limits for `inspect`, `preview`, `export` and `texture`. Other values are refused. Without it nothing changes, including the refusal at 65. In the library, `load_document_with`, `parse_document_with`, `assemble_with` and `inspect_document_with` take a `MaxExtent`; the old functions keep their signatures and the 64 limit. The preview ray start distance grows with the model's diagonal (unchanged up to 64 voxels a side); `.vox` export already allowed 256.
+
 ## Tests
 
 `cargo test` does not compile as a whole. Run targets one at a time: `cargo test --test <name>`.

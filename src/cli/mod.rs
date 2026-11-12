@@ -23,15 +23,15 @@ use std::path::Path;
 use args::{Cli, Command, PreviewArgs, TextureArgs, ExportArgs};
 
 use crate::fault::{Fault, Origin};
-use crate::format::load_document;
-use crate::inspect::{ExitCode, inspect_document};
+use crate::format::{MaxExtent, load_document_with};
+use crate::inspect::{ExitCode, inspect_document_with};
 use crate::material::{MaterialTable, load_materials};
 use crate::render::{View, contact_sheet, pixels_per_voxel, render, to_png, view_named};
 use crate::texture::{
     AxisAlignedView, EmittedFace, FaceSelection, SeamPolicy, SeamVerdict, TextureRequest,
     TextureSet, emit,
 };
-use crate::volume::{StateSelection, Volume, assemble};
+use crate::volume::{StateSelection, Volume, assemble_with};
 use crate::export::{write_vox, write_obj};
 use crate::gltf_export::{Ao, Colors, DEFAULT_AO_STRENGTH, GlbOptions, MeshMode, Unit, check_ao_strength, write_glb_with};
 
@@ -60,11 +60,12 @@ pub fn run(argv: Vec<OsString>, out: &mut dyn Write, err: &mut dyn Write) -> Exi
 fn dispatch(argv: Vec<OsString>, out: &mut dyn Write) -> Result<ExitCode, Fault> {
     let cli: Cli = args::parse(argv)?;
     let states = cli.command.state_selection()?;
+    let limit = cli.limit()?;
     match &cli.command {
-        Command::Preview(asked) => preview(&Preview::of(asked), &states, out),
-        Command::Inspect(asked) => inspect(&asked.document, &states, out),
-        Command::Texture(asked) => texture(&Texture::of(asked), &states, out),
-        Command::Export(asked) => export(&Export::of(asked), &states, out),
+        Command::Preview(asked) => preview(&Preview::of(asked), &states, limit, out),
+        Command::Inspect(asked) => inspect(&asked.document, &states, limit, out),
+        Command::Texture(asked) => texture(&Texture::of(asked), &states, limit, out),
+        Command::Export(asked) => export(&Export::of(asked), &states, limit, out),
     }
 }
 
@@ -99,14 +100,15 @@ impl<'a> Preview<'a> {
 fn preview(
     request: &Preview<'_>,
     states: &StateSelection,
+    limit: MaxExtent,
     out: &mut dyn Write,
 ) -> Result<ExitCode, Fault> {
     let origin = Origin::new(request.document);
     let scale = pixels_per_voxel(args::scale_of(request.scale), origin.clone())?;
-    let model = load_document(request.document)?;
+    let model = load_document_with(request.document, limit)?;
     let materials = load_materials(&request.materials)?;
     model.bind_materials(&materials)?;
-    let volume = assemble(&model, states)?;
+    let volume = assemble_with(&model, states, limit)?;
 
     // The whole encoding exists before the file is opened, so a refusal from
     // anything above cannot leave a partial image behind.
@@ -218,14 +220,15 @@ impl<'a> Texture<'a> {
 fn texture(
     request: &Texture<'_>,
     states: &StateSelection,
+    limit: MaxExtent,
     out: &mut dyn Write,
 ) -> Result<ExitCode, Fault> {
     let origin = Origin::new(request.document);
     let scale = pixels_per_voxel(args::scale_of(request.scale), origin.clone())?;
-    let model = load_document(request.document)?;
+    let model = load_document_with(request.document, limit)?;
     let materials = load_materials(&request.materials)?;
     model.bind_materials(&materials)?;
-    let volume = assemble(&model, states)?;
+    let volume = assemble_with(&model, states, limit)?;
 
     // Everything rendered, judged and encoded before any file is opened. That
     // is the all-or-nothing rule, and it is what a shell loop calling this tool
@@ -374,9 +377,10 @@ fn wrote(path: &Path, bytes: &[u8]) -> Result<(), Fault> {
 fn inspect(
     document: &Path,
     states: &StateSelection,
+    limit: MaxExtent,
     out: &mut dyn Write,
 ) -> Result<ExitCode, Fault> {
-    let report = inspect_document(document, states)?;
+    let report = inspect_document_with(document, states, limit)?;
     said(report::write(&report, out), &Origin::new(document))?;
     Ok(report.exit_code())
 }
@@ -446,6 +450,7 @@ fn glb_only(options: &GlbOptions, ext: &str, destination: &Path) -> Result<(), F
 fn export(
     request: &Export<'_>,
     states: &StateSelection,
+    limit: MaxExtent,
     out: &mut dyn Write,
 ) -> Result<ExitCode, Fault> {
     let _origin = Origin::new(request.document);
@@ -455,10 +460,10 @@ fn export(
     if ext == "vox" || ext == "obj" {
         glb_only(&request.glb, &ext, request.destination)?;
     }
-    let model = load_document(request.document)?;
+    let model = load_document_with(request.document, limit)?;
     let materials = load_materials(&request.materials)?;
     model.bind_materials(&materials)?;
-    let volume = assemble(&model, states)?;
+    let volume = assemble_with(&model, states, limit)?;
 
     let mut merged_stats = None;
     match ext.as_str() {

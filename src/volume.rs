@@ -21,7 +21,7 @@ use glam::IVec3;
 
 use crate::fault::Fault;
 use crate::format::parse;
-use crate::format::{Extent, FilledCell, Model, PartName, StateName, Voxel};
+use crate::format::{Extent, FilledCell, MaxExtent, Model, PartName, StateName, Voxel};
 use crate::name::MaterialKey;
 
 /// Which material fills one cell, as an index into the volume's own palette.
@@ -196,12 +196,26 @@ impl StateSelection {
 /// # Errors
 ///
 /// Returns a [`Fault`] naming the axis and the assembled extent when the placed
-/// parts exceed the 64-voxel limit on any axis, naming the state and the ones
+/// parts exceed the extent limit (64 voxels unless raised) on any axis, naming the state and the ones
 /// the part declares when `states` asks for one it does not, and naming the
 /// model when the assembled art holds no filled voxel at all.
 pub fn assemble(model: &Model, states: &StateSelection) -> Result<Volume, Fault> {
+    assemble_with(model, states, MaxExtent::default())
+}
+
+/// The volume `model` assembles to under `states`, reaching up to `limit`
+/// voxels on any axis.
+///
+/// # Errors
+///
+/// As [`assemble`], except that the limit is `limit`.
+pub fn assemble_with(
+    model: &Model,
+    states: &StateSelection,
+    limit: MaxExtent,
+) -> Result<Volume, Fault> {
     let placed = parse::assemble::place(model, states)?;
-    let (lowest, reach) = parse::assemble::extent_of(&placed.cells, model)?;
+    let (lowest, reach) = parse::assemble::extent_of(&placed.cells, model, limit)?;
 
     // One translation for the whole model, never one per part: a part reaching
     // below the model's lowest voxel drags every other part up with it, and

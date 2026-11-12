@@ -17,11 +17,8 @@ use glam::IVec3;
 
 use crate::fault::Fault;
 use crate::format::parse::state::quoted;
-use crate::format::{FilledCell, Model, Part, PartName, Voxel};
+use crate::format::{FilledCell, MaxExtent, Model, Part, PartName, Voxel};
 use crate::volume::StateSelection;
-
-/// The most voxels an assembled model may reach on any one axis.
-const MAX_EXTENT: i32 = 64;
 
 /// One part's art, already placed in the model's pre-normalisation space.
 #[derive(Debug)]
@@ -54,15 +51,19 @@ pub fn place(model: &Model, states: &StateSelection) -> Result<Placed, Fault> {
 /// Where the assembled art starts, and how far it reaches from there.
 ///
 /// Both are measured on the art rather than on any declared `size`: a part may
-/// legitimately declare more extent than it fills, and the 64-voxel limit is
+/// legitimately declare more extent than it fills, and the extent limit is
 /// about the box the model actually occupies.
 ///
 /// # Errors
 ///
 /// Returns a [`Fault`] naming the model when nothing at all is filled, and one
 /// naming the axis and the assembled figure when the art reaches past
-/// [`MAX_EXTENT`].
-pub fn extent_of(cells: &[(IVec3, FilledCell)], model: &Model) -> Result<(IVec3, IVec3), Fault> {
+/// `limit`.
+pub fn extent_of(
+    cells: &[(IVec3, FilledCell)],
+    model: &Model,
+    limit: MaxExtent,
+) -> Result<(IVec3, IVec3), Fault> {
     let mut positions = cells.iter().map(|(at, _)| *at);
     let first = positions.next().ok_or_else(|| nothing_filled(model))?;
     let (lowest, highest) = positions.fold((first, first), |(low, high), at| {
@@ -70,11 +71,12 @@ pub fn extent_of(cells: &[(IVec3, FilledCell)], model: &Model) -> Result<(IVec3,
     });
     let reach = highest - lowest + IVec3::ONE;
     for (axis, span) in [("x", reach.x), ("y", reach.y), ("z", reach.z)] {
-        if span > MAX_EXTENT {
+        if i64::from(span) > i64::from(limit.get()) {
             return Err(Fault::about(
                 model.origin().clone(),
                 format!(
-                    "the assembled model reaches {span} voxels on axis {axis}, but the limit is {MAX_EXTENT} voxels on any axis"
+                    "the assembled model reaches {span} voxels on axis {axis}, but the limit is {max} voxels on any axis",
+                    max = limit.get()
                 ),
             ));
         }

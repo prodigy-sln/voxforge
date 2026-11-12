@@ -20,7 +20,7 @@ use std::num::NonZeroU32;
 
 use crate::fault::{Fault, Origin};
 use crate::format::dto::{DocumentDto, from_text};
-use crate::format::{Model, palette};
+use crate::format::{MaxExtent, Model, palette};
 
 /// The model `text` describes, attributed to `origin`.
 ///
@@ -29,13 +29,22 @@ use crate::format::{Model, palette};
 /// Returns a [`Fault`] naming the origin, the element and the field at fault if
 /// the document is not a legal `.mcvox` document.
 pub fn document(text: &str, origin: Origin) -> Result<Model, Fault> {
+    document_with(text, origin, MaxExtent::default())
+}
+
+/// The model `text` describes, with parts of up to `limit` voxels per axis.
+///
+/// # Errors
+///
+/// As [`document`], except that the declared-size limit is `limit`.
+pub fn document_with(text: &str, origin: Origin, limit: MaxExtent) -> Result<Model, Fault> {
     let declared: DocumentDto = from_text(text, &origin)?;
 
     header::check_schema(&declared, &origin)?;
     let name = header::read_name(&declared, &origin)?;
     let scale = header::read_scale(&declared, &origin)?;
     let slice = header::read_axis(declared.slice.as_ref(), &origin)?;
-    let mut parts = header::read_parts(&declared, slice, &origin)?;
+    let mut parts = header::read_parts(&declared, slice, limit, &origin)?;
     // Before any layer is read: a layer naming a part is meaningless until the
     // parts themselves are known to be a tree with unambiguous names.
     tree::check(&parts, &origin)?;

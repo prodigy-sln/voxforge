@@ -47,6 +47,52 @@ impl Axis {
     }
 }
 
+/// The most voxels a part, or an assembled model, may reach on any one axis.
+///
+/// 64 unless a caller opts in to more, up to 256 (the `.vox` limit per axis).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MaxExtent(u32);
+
+impl MaxExtent {
+    /// What every limit was before the option existed.
+    pub const DEFAULT: u32 = 64;
+    /// The largest limit that can be asked for.
+    pub const LARGEST: u32 = 256;
+
+    /// The limit `voxels`, which must lie within 64 to 256.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`Fault`] about `origin` naming the value and the range when
+    /// `voxels` is outside it.
+    pub fn new(voxels: i64, origin: &Origin) -> Result<Self, Fault> {
+        match u32::try_from(voxels) {
+            Ok(wanted) if (Self::DEFAULT..=Self::LARGEST).contains(&wanted) => Ok(Self(wanted)),
+            _ => Err(Fault::about(
+                origin.clone(),
+                format!(
+                    "`--max-extent {voxels}` is out of range: the limit must be between {low} and {high} voxels",
+                    low = Self::DEFAULT,
+                    high = Self::LARGEST
+                ),
+            )
+            .in_field("max-extent")),
+        }
+    }
+
+    /// The limit in voxels.
+    #[must_use]
+    pub fn get(self) -> u32 {
+        self.0
+    }
+}
+
+impl Default for MaxExtent {
+    fn default() -> Self {
+        Self(Self::DEFAULT)
+    }
+}
+
 /// How far a part reaches on each axis, in voxels.
 ///
 /// Three named fields rather than an array, because every refusal about an
@@ -424,10 +470,20 @@ impl Model {
 /// Returns a [`Fault`] naming `path` if the file cannot be read, or the refusal
 /// [`parse_document`] makes.
 pub fn load_document(path: &Path) -> Result<Model, Fault> {
+    load_document_with(path, MaxExtent::default())
+}
+
+/// The model the document at `path` describes, with parts of up to `limit`
+/// voxels per axis.
+///
+/// # Errors
+///
+/// As [`load_document`], except that the declared-size limit is `limit`.
+pub fn load_document_with(path: &Path, limit: MaxExtent) -> Result<Model, Fault> {
     let origin = Origin::new(path);
     let text = fs::read_to_string(path)
         .map_err(|cause| Fault::about(origin.clone(), cause.to_string()))?;
-    parse_document(&text, origin)
+    parse_document_with(&text, origin, limit)
 }
 
 /// The model `text` describes, attributed to `origin`.
@@ -438,4 +494,13 @@ pub fn load_document(path: &Path) -> Result<Model, Fault> {
 /// the document is not a legal `.mcvox` document.
 pub fn parse_document(text: &str, origin: Origin) -> Result<Model, Fault> {
     parse::document(text, origin)
+}
+
+/// The model `text` describes, with parts of up to `limit` voxels per axis.
+///
+/// # Errors
+///
+/// As [`parse_document`], except that the declared-size limit is `limit`.
+pub fn parse_document_with(text: &str, origin: Origin, limit: MaxExtent) -> Result<Model, Fault> {
+    parse::document_with(text, origin, limit)
 }

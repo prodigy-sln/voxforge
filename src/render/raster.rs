@@ -20,9 +20,11 @@ use crate::render::shade::Face;
 use crate::render::{Pixel, Preview, Shading, View, dda, shade};
 use crate::volume::Volume;
 
-/// How far back along the view direction a ray starts, beyond the model's box.
+/// How far back along the view direction a ray starts, at least.
 ///
 /// Any distance clear of the volume does; the march finds its own entry point.
+/// It is clear of every box up to 64 voxels a side; [`stand_off`] grows it for
+/// larger ones.
 const STAND_OFF: f64 = 256.0;
 
 /// How finely a projected span is rounded before its pixel count is taken.
@@ -129,6 +131,8 @@ struct Frame {
     top: f64,
     /// How many pixels one voxel spans.
     scale: f64,
+    /// How far back from the image plane a ray starts.
+    stand_off: f64,
     /// How many pixels across the image is.
     width: u32,
     /// How many pixels down it is.
@@ -150,6 +154,7 @@ impl Frame {
             left,
             top,
             scale,
+            stand_off: stand_off(extent.x, extent.y, extent.z),
             width: pixels(right - left, scale),
             height: pixels(top - bottom, scale),
         }
@@ -160,11 +165,22 @@ impl Frame {
         let across = self.left + (f64::from(column) + 0.5) / self.scale;
         let down = self.top - (f64::from(row) + 0.5) / self.scale;
         let on_plane = self.basis.right * across + self.basis.up * down;
-        let origin = on_plane - self.basis.direction * STAND_OFF;
+        let origin = on_plane - self.basis.direction * self.stand_off;
         let hit = dda::first_hit(scene.volume, origin, self.basis.direction)?;
         let material = scene.materials.get(scene.volume.material_at(hit.voxel)?)?;
         Some((scene.colour)(material, hit.face))
     }
+}
+
+/// A start distance clear of a box reaching `x` by `y` by `z`.
+///
+/// The image plane passes through the box's origin corner, so the far corner
+/// can lie a whole diagonal behind it. Boxes up to 64 voxels a side keep the
+/// fixed [`STAND_OFF`], which keeps their renders exactly as they were.
+fn stand_off(x: u32, y: u32, z: u32) -> f64 {
+    let (x, y, z) = (f64::from(x), f64::from(y), f64::from(z));
+    let diagonal = (x * x + y * y + z * z).sqrt();
+    STAND_OFF.max(diagonal.ceil() + 1.0)
 }
 
 /// The eight corners of a box reaching `x` by `y` by `z` from the origin.

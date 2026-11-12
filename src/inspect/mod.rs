@@ -23,7 +23,7 @@ pub use connectivity::{Component, Floating, SymmetryVerdict};
 pub use stats::{Bounds, MaterialCount, Stats};
 
 use crate::fault::Fault;
-use crate::format::{Axis, Model};
+use crate::format::{Axis, MaxExtent, Model};
 use crate::volume::{StateSelection, Volume};
 
 /// What the process exits with once a report has been printed.
@@ -153,8 +153,22 @@ pub fn inspect(volume: &Volume, model: &Model) -> Report {
 /// to state, and reporting zeroes for one would be a statement about a model
 /// nobody has.
 pub fn inspect_document(path: &Path, states: &StateSelection) -> Result<Report, Fault> {
-    let model = crate::format::load_document(path)?;
-    let volume = crate::volume::assemble(&model, states)?;
+    inspect_document_with(path, states, MaxExtent::default())
+}
+
+/// The report the document at `path` earns, for models of up to `limit` voxels
+/// per axis.
+///
+/// # Errors
+///
+/// As [`inspect_document`], except that the limit is `limit`.
+pub fn inspect_document_with(
+    path: &Path,
+    states: &StateSelection,
+    limit: MaxExtent,
+) -> Result<Report, Fault> {
+    let model = crate::format::load_document_with(path, limit)?;
+    let volume = crate::volume::assemble_with(&model, states, limit)?;
     Ok(inspect(&volume, &model))
 }
 

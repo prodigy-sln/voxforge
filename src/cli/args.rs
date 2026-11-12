@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use clap::{Args, Parser, Subcommand};
 
 use crate::fault::{Fault, Origin};
-use crate::format::{PartName, StateName};
+use crate::format::{MaxExtent, PartName, StateName};
 use crate::gltf_export::{Ao, Colors, DEFAULT_AO_STRENGTH, MeshMode, Unit};
 use crate::volume::StateSelection;
 
@@ -28,9 +28,35 @@ const DEFAULT_SCALE: u32 = 24;
     about = "Author voxel models, and see what you made"
 )]
 pub struct Cli {
+    /// Voxels a part or an assembled model may reach on any axis, from 64 to 256 (default 64).
+    ///
+    /// Hidden from `--help` so that every command's help text stays as it was.
+    #[arg(
+        long = "max-extent",
+        global = true,
+        hide = true,
+        value_name = "N",
+        allow_negative_numbers = true
+    )]
+    pub max_extent: Option<i64>,
     /// What to do.
     #[command(subcommand)]
     pub command: Command,
+}
+
+impl Cli {
+    /// The extent limit asked for, or the default one.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`Fault`] naming the value and the allowed range when the
+    /// option is outside it.
+    pub fn limit(&self) -> Result<MaxExtent, Fault> {
+        self.max_extent.map_or_else(
+            || Ok(MaxExtent::default()),
+            |voxels| MaxExtent::new(voxels, &Origin::new("voxforge")),
+        )
+    }
 }
 
 /// The three things this tool does.

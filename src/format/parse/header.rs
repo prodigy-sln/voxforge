@@ -13,14 +13,11 @@ use toml::Value;
 
 use crate::fault::{Fault, Origin};
 use crate::format::dto::{DocumentDto, PartDto, from_value};
-use crate::format::{Attach, Axis, Extent, Part, PartName, StateName};
+use crate::format::{Attach, Axis, Extent, MaxExtent, Part, PartName, StateName};
 use crate::name::ModelName;
 
 /// The only document revision this tool understands.
 const SUPPORTED_SCHEMA: i64 = 1;
-
-/// The most voxels a part may reach on any one axis.
-const MAX_EXTENT: i64 = 64;
 
 /// The fewest voxels a part may reach on any one axis.
 const MIN_EXTENT: i64 = 1;
@@ -146,6 +143,7 @@ pub fn read_axis(declared: Option<&Value>, origin: &Origin) -> Result<Axis, Faul
 pub fn read_parts(
     document: &DocumentDto,
     model_slice: Axis,
+    limit: MaxExtent,
     origin: &Origin,
 ) -> Result<Vec<Part>, Fault> {
     match (&document.size, &document.parts) {
@@ -157,8 +155,8 @@ pub fn read_parts(
             origin.clone(),
             "a document declares its geometry either as a top-level `size` or as `[[parts]]` tables, and this one declares neither",
         )),
-        (Some(size), None) => Ok(vec![implicit_part(document, size, model_slice, origin)?]),
-        (None, Some(parts)) => explicit_parts(parts, model_slice, origin),
+        (Some(size), None) => Ok(vec![implicit_part(document, size, model_slice, limit, origin)?]),
+        (None, Some(parts)) => explicit_parts(parts, model_slice, limit, origin),
     }
 }
 
@@ -167,12 +165,13 @@ fn implicit_part(
     document: &DocumentDto,
     size: &Value,
     model_slice: Axis,
+    limit: MaxExtent,
     origin: &Origin,
 ) -> Result<Part, Fault> {
     let name = PartName::new(implicit_part_name(document));
     Ok(Part {
         name,
-        size: read_extent(size, origin)?,
+        size: read_extent(size, limit, origin)?,
         origin: read_pivot(document.origin.as_ref(), origin)?,
         slice: model_slice,
         attach: None,
@@ -195,7 +194,12 @@ fn implicit_part_name(document: &DocumentDto) -> String {
 }
 
 /// Every part an explicit-form document declares.
-fn explicit_parts(parts: &Value, model_slice: Axis, origin: &Origin) -> Result<Vec<Part>, Fault> {
+fn explicit_parts(
+    parts: &Value,
+    model_slice: Axis,
+    limit: MaxExtent,
+    origin: &Origin,
+) -> Result<Vec<Part>, Fault> {
     let declared = parts.as_array().ok_or_else(|| {
         Fault::about(
             origin.clone(),
@@ -204,7 +208,7 @@ fn explicit_parts(parts: &Value, model_slice: Axis, origin: &Origin) -> Result<V
     })?;
     declared
         .iter()
-        .map(|part| explicit_part(part, model_slice, origin))
+        .map(|part| explicit_part(part, model_slice, limit, origin))
         .collect()
 }
 
@@ -213,7 +217,12 @@ fn explicit_parts(parts: &Value, model_slice: Axis, origin: &Origin) -> Result<V
 /// The part's name is read straight out of the raw table *before* the table is
 /// typed, so that a refusal about an unrecognised field can say which part
 /// carried it — which is the one thing typing it first would throw away.
-fn explicit_part(declared: &Value, model_slice: Axis, origin: &Origin) -> Result<Part, Fault> {
+fn explicit_part(
+    declared: &Value,
+    model_slice: Axis,
+    limit: MaxExtent,
+    origin: &Origin,
+) -> Result<Part, Fault> {
     let spelled = declared
         .as_table()
         .and_then(|table| table.get("name"))
@@ -223,11 +232,16 @@ fn explicit_part(declared: &Value, model_slice: Axis, origin: &Origin) -> Result
         None => fault,
     };
     let part: PartDto = from_value(declared.clone(), origin).map_err(attribute)?;
-    declared_part(&part, model_slice, origin).map_err(attribute)
+    declared_part(&part, model_slice, limit, origin).map_err(attribute)
 }
 
 /// The part a typed `[[parts]]` table describes.
-fn declared_part(part: &PartDto, model_slice: Axis, origin: &Origin) -> Result<Part, Fault> {
+fn declared_part(
+    part: &PartDto,
+    model_slice: Axis,
+    limit: MaxExtent,
+    origin: &Origin,
+) -> Result<Part, Fault> {
     let name = part.name.as_ref().and_then(Value::as_str).ok_or_else(|| {
         Fault::about(origin.clone(), "every `[[parts]]` table declares a `name`").in_field("name")
     })?;
@@ -241,7 +255,7 @@ fn declared_part(part: &PartDto, model_slice: Axis, origin: &Origin) -> Result<P
         .map_or(Ok(model_slice), |slice| read_axis(Some(slice), origin))?;
     Ok(Part {
         name: PartName::new(name),
-        size: read_extent(size, origin)?,
+        size: read_extent(size, limit, origin)?,
         origin: read_pivot(part.origin.as_ref(), origin)?,
         slice,
         attach: read_attach(part.attach.as_ref(), origin)?,
@@ -255,7 +269,7 @@ fn declared_part(part: &PartDto, model_slice: Axis, origin: &Origin) -> Result<P
 /// Read as three signed values rather than as three unsigned ones, because a
 /// refusal has to quote `-1` back as `-1`: an unsigned parse throws the value
 /// away and leaves the author reading about a type they did not write.
-fn read_extent(declared: &Value, origin: &Origin) -> Result<Extent, Fault> {
+fn read_extent(declared: &Value, limit: MaxExtent, origin: &Origin) -> Result<Extent, Fault> {
     let axes = declared.as_array().ok_or_else(|| {
         field_refusal(
             origin,
@@ -265,14 +279,14 @@ fn read_extent(declared: &Value, origin: &Origin) -> Result<Extent, Fault> {
     })?;
     let [x, y, z] = triple(axes, "size", origin)?;
     Ok(Extent {
-        x: bounded(x, "x", origin)?,
-        y: bounded(y, "y", origin)?,
-        z: bounded(z, "z", origin)?,
+        x: bounded(x, "x", limit, origin)?,
+        y: bounded(y, "y", limit, origin)?,
+        z: bounded(z, "z", limit, origin)?,
     })
 }
 
 /// One axis of an extent, checked against both bounds.
-fn bounded(declared: i64, axis: &str, origin: &Origin) -> Result<u32, Fault> {
+fn bounded(declared: i64, axis: &str, limit: MaxExtent, origin: &Origin) -> Result<u32, Fault> {
     if declared < MIN_EXTENT {
         return Err(field_refusal(
             origin,
@@ -282,12 +296,13 @@ fn bounded(declared: i64, axis: &str, origin: &Origin) -> Result<u32, Fault> {
             ),
         ));
     }
-    if declared > MAX_EXTENT {
+    if declared > i64::from(limit.get()) {
         return Err(field_refusal(
             origin,
             "size",
             format!(
-                "on axis {axis} the declared size is {declared}, but the limit is {MAX_EXTENT} voxels"
+                "on axis {axis} the declared size is {declared}, but the limit is {max} voxels",
+                max = limit.get()
             ),
         ));
     }
