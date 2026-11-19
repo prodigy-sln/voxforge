@@ -3,7 +3,7 @@
 //!
 //! **Declared by path from the build tests alone rather than from
 //! `common/mod.rs`**, so that a test binary with no interest in an art build
-//! does not link `mc-core`'s index parser to get at a document fixture.
+//! does not link the index parser to get at a document fixture.
 //!
 //! Every run goes through [`crate::common::cli::invoke`], which is the shipped
 //! command line over two in-memory writers. That is deliberate and it is the
@@ -26,23 +26,23 @@ use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use mc_core::art::{INDEX_FILE_NAME, TextureSetIndex};
-use mc_core::content::TEXTURE_EDGE;
-use mc_core::hash::fnv_1a_64;
 use tempfile::TempDir;
 use voxforge::inspect::ExitCode;
+use voxforge::shared::TEXTURE_EDGE;
+use voxforge::shared::art::{INDEX_FILE_NAME, TextureSetIndex};
+use voxforge::shared::hash::fnv_1a_64;
 
 use crate::common::cli::invoke;
 use crate::common::texture::{BLACK, GRADIENT, HIGH, LOW, Tone, WHITE, material_text, model};
 
 /// The file a manifest is written as, inside a content root.
 ///
-/// The shipped root carries one at `content/base/textures.toml`, and a build is
-/// given that path — so a fixture spells it the same way.
+/// The fixture root carries one at `tests/fixtures/content/textures.toml`, and a
+/// build is given that path — so a fixture spells it the same way.
 pub const MANIFEST_FILE: &str = "textures.toml";
 
-/// Where the shipped content root sits, relative to the repository.
-const SHIPPED_ROOT: &str = "content/base";
+/// Where the fixture content root sits, relative to the repository.
+const SHIPPED_ROOT: &str = "tests/fixtures/content";
 
 /// A content root a build is run against.
 ///
@@ -442,7 +442,7 @@ impl Build {
     /// to be readable: comparing two whole output directories byte for byte
     /// prints tens of kilobytes of PNG per side and buries the one file that
     /// differs. The length travels with it so that a truncation is visible as
-    /// one, and the fold is `mc-core`'s published one, which nothing in this
+    /// one, and the fold is the index's own FNV-1a one, which nothing in this
     /// suite is asserting about.
     #[must_use]
     pub fn fingerprints(&self) -> BTreeMap<String, (usize, u64)> {
@@ -496,7 +496,7 @@ impl Build {
         Refused::Missing(missing)
     }
 
-    /// The index as `mc-core` reads it, and nothing where none was written.
+    /// The index as its parser reads it, and nothing where none was written.
     fn parsed_index(&self) -> Option<Result<TextureSetIndex, String>> {
         let bytes = self.written.get(INDEX_FILE_NAME)?;
         let Ok(text) = std::str::from_utf8(bytes) else {

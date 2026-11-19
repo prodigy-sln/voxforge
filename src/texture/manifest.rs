@@ -16,8 +16,8 @@ use std::collections::BTreeSet;
 use std::num::NonZeroU32;
 use std::path::{Path, PathBuf};
 
-use mc_core::art::is_an_ordinary_image_name;
-use mc_core::id::TextureKey;
+use crate::shared::art::is_an_ordinary_image_name;
+use crate::shared::id::TextureKey;
 use serde::Deserialize;
 use toml::Value;
 

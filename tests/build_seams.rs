@@ -22,7 +22,7 @@ use std::error::Error;
 
 use common::TestResult;
 use common::texture::{GRADIENT, GREY, Leg, Legs, legs_named};
-use mc_core::content::TEXTURE_EDGE;
+use voxforge::shared::TEXTURE_EDGE;
 use voxforge::inspect::ExitCode;
 
 use build::{

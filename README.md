@@ -1,41 +1,176 @@
-# VoxForge (export fork)
+<p align="center">
+  <img src="https://cdn.prodigy.solutions/voxforge/hero.png" alt="Voxel models rendered by VoxForge: a knight, a unicorn, a fox, a portal, a car and a workbench" width="100%">
+</p>
 
-This folder is a fork of `MyCraft/tools/voxforge`, taken at MyCraft commit `f483a363` (2026-08-15). **MyCraft's copy is the original**; this one exists for the `export` command.
+<h1 align="center">VoxForge</h1>
 
-## How the two copies differ
+<p align="center"><b>Voxel models as plain text. Previews, checks and game-ready exports from one CLI.</b></p>
 
-| | This fork | MyCraft `tools/voxforge` |
+VoxForge is a voxel model format built to be written by people and AI agents, together with a fast command-line tool around it. A model is a small TOML file where each layer is drawn as ASCII grid art. VoxForge renders it from every angle, tells you exactly what's wrong with it, and exports it to MagicaVoxel, OBJ or glTF.
+
+It is built around a short loop: **describe → render → look → fix**. Every refusal names the file, the part and the cell at fault, so an agent can repair its own model from the error message alone.
+
+## Highlights
+
+- **Text-first format.** `.mcvox` files are TOML: diffable, reviewable and easy to generate. Shared material files keep many models on one palette.
+- **Rigs and states.** Models are trees of parts attached to each other, and each part can have alternative states (a lit and an unlit torch, an open and a closed door).
+- **CPU preview renderer.** Six orthographic views, eight isometric views or a full contact sheet, rendered deterministically to PNG with no GPU.
+- **Model inspection.** Voxel counts per material, bounds, connected components, floating voxels and mirror symmetry.
+- **Block textures.** Bake one face or all six of a model into tileable textures, with seam checks.
+- **Exports.** `.vox` (MagicaVoxel), `.obj` + `.mtl`, and binary glTF `.glb` with optional merged meshes, block units, linear colours and baked vertex ambient occlusion.
+
+<p align="center">
+  <img src="https://cdn.prodigy.solutions/voxforge/fox-sheet.png" alt="Contact sheet of a voxel fox from all six orthographic and eight isometric views" width="640"><br>
+  <sub>One <code>voxforge preview</code> call: every canonical view of a model on one sheet.</sub>
+</p>
+
+## Quick start
+
+VoxForge is a Rust project (edition 2024, Rust 1.85 or newer).
+
+```sh
+git clone https://github.com/prodigy-sln/voxforge.git
+cd voxforge
+cargo build --release
+```
+
+The binary is `target/release/voxforge`. Try it on the bundled model:
+
+```sh
+voxforge inspect assets/models/human.mcvox
+voxforge preview assets/models/human.mcvox --out human.png
+voxforge export  assets/models/human.mcvox --out human.glb --mesh merged
+```
+
+`--materials` defaults to `assets/materials`, which ships about 50 ready-made materials.
+
+## A model in 40 lines
+
+```toml
+schema = 1
+name   = "demo:mushroom"
+scale  = 16                 # voxels per block edge
+size   = [5, 4, 5]
+slice  = "y"                # each layer is a floor plan, bottom up
+
+[palette]
+"." = "empty"
+"s" = "base:fox_cream"
+"c" = "base:fox_fur"
+
+[[layers]]
+y = 0
+grid = """
+.....
+.....
+..s..
+.....
+.....
+"""
+
+[[layers]]
+y = 1
+grid = """
+.....
+.....
+..s..
+.....
+.....
+"""
+
+[[layers]]
+y = 2
+grid = """
+.ccc.
+ccccc
+ccccc
+ccccc
+.ccc.
+"""
+
+[[layers]]
+y = 3
+grid = """
+.....
+.ccc.
+.ccc.
+.ccc.
+.....
+"""
+```
+
+```text
+$ voxforge inspect mushroom.mcvox
+filled 32 voxels
+bounds (0, 0, 0) to (4, 3, 4) inclusive
+  base:fox_cream 2
+  base:fox_fur 30
+components 1
+floating none
+symmetry x Mirrored
+```
+
+The full specification, covering multi-part rigs, states, orientation rules and limits, is in **[docs/format.md](docs/format.md)**.
+
+## Commands
+
+| Command | What it does |
+|---|---|
+| `voxforge preview <model> --out <png>` | Renders a contact sheet of every view, or a single view with `--view` (`front`, `back`, `left`, `right`, `top`, `bottom`, `iso-fl`, `iso-fr`, `iso-bl`, `iso-br`, plus `-under` variants). |
+| `voxforge inspect <model>` | Prints statistics and structural problems. Exits non-zero when the model is defective. |
+| `voxforge texture <model> --out <dir> --face <face>` | Writes a block texture for one face, or all six with `--all-faces`. `--seamless` refuses textures that won't tile. |
+| `voxforge export <model> --out <file>` | Exports to `.vox`, `.obj` or `.glb`, chosen by the file extension. |
+
+Shared options:
+
+- `--materials <dir>`: where material keys are resolved from.
+- `--state part=state`: picks a part's state (repeatable).
+- `--pixels-per-voxel <n>`: the render scale (default 24).
+
+### glTF export options
+
+| Option | Values | Default |
 |---|---|---|
-| `preview`, `inspect`, `texture` | Same code as MyCraft at `f483a363` | Same, plus later changes |
-| `export` (`.vox`, `.obj`, `.glb`) | Yes | No |
-| `build` (texture sets from a manifest) | Yes, ported from MyCraft; hidden from `--help` so every help text stays as it was | Yes (since 2026-08-21) |
-| Default `--materials` | `assets/materials` | `content/base/materials` |
-| Default preview scale | 24 | 8 |
-| Depends on | `mc-core` by path (`../MyCraft/crates/mc-core`) | MyCraft workspace |
+| `--mesh` | `cubes` (six faces per voxel), `merged` (hidden faces dropped, coplanar faces merged) | `cubes` |
+| `--unit` | `voxel`, `block` (positions divided by the model's `scale`) | `voxel` |
+| `--colors` | `srgb`, `linear` | `srgb` |
+| `--ao` | `off`, `vertex` (ambient occlusion baked into vertex colours) | `off` |
+| `--ao-strength` | `0.0`–`1.0` | `0.5` |
 
-The two defaults differ, so neither copy can replace the other without changing behaviour for one of its users. Merging them is the owner's decision.
+A typical game-engine export:
 
-## Rules for changes here
+```sh
+voxforge export model.mcvox --out model.glb --mesh merged --unit block --colors linear --ao vertex
+```
 
-- Other projects call this tool. Add behaviour as new options or commands; do not change existing defaults, formats or output.
-- Format, preview, inspect and texture changes belong in MyCraft's copy first.
+### Larger models
 
-## Larger models
+Parts and assembled models are limited to 64 voxels per axis by default. Pass `--max-extent <N>` (64–256) to any command to raise the limit for that run.
 
-By default a part and an assembled model may reach 64 voxels on an axis. `--max-extent <N>` (64 to 256, any command, before or after the command name, deliberately absent from `--help` so help texts stay unchanged) raises both limits for `inspect`, `preview`, `export` and `texture`. Other values are refused. Without it nothing changes, including the refusal at 65. In the library, `load_document_with`, `parse_document_with`, `assemble_with` and `inspect_document_with` take a `MaxExtent`; the old functions keep their signatures and the 64 limit. The preview ray start distance grows with the model's diagonal (unchanged up to 64 voxels a side); `.vox` export already allowed 256.
+## Materials
 
-## Tests
+A material is one TOML file with a namespaced name, an sRGB colour and an optional emissive factor:
 
-Run targets one at a time with `cargo test --test <name>`. `cargo test` as a whole does not compile, and 9 tests fail (state of 2026-11-12). The other 223 pass.
+```toml
+name     = "base:flame"
+color    = "#ff9a3c"
+emissive = 0.8
+```
 
-The failing tests were written for MyCraft's tree and need things this repository does not have. None was changed, skipped or special-cased.
+Every `*.toml` file in the materials directory is loaded. Palettes refer to materials by name, so many models stay on one consistent palette.
 
-- `reference_golden` does not compile: it needs `mc-testkit`, a MyCraft crate. Adding it as a path dev-dependency compiles it but raises `image` in `Cargo.lock` from 0.25.9 to 0.25.10 (it needs Rust 1.88, the fork declares 1.85) and `moxcms` to 0.8, which changes the normal build, so it is not added. The test would still fail (next point).
-- `reference_golden`, one test in `command_line`, and the `build_writes_a_set` and `build_determinism` tests that use the shipped content root (4 + 1 tests) read `<package>/../../content/base/...` and `<package>/../../tools/voxforge/tests/goldens/...`. That is the MyCraft repository root when the package sits at `tools/voxforge`; here it is outside this repository. They pass when the package sits at `<root>/tools/voxforge` with `<root>/content/base` taken from MyCraft at commit `bdbb0214` (7 manifest entries; MyCraft's current 8 do not match the tests' count of 7).
-- Two tests in `texture_streams` (`a_single_face_texture_writes_its_image_and_prints_one_line_about_it`, `an_undeclared_face_set_writes_all_six_and_reports_each_faces_verdict`) run `texture` without `--pixels-per-voxel` and expect MyCraft's default of 8. This fork's default is 24 and must not change.
+## Using VoxForge with AI agents
 
-The `build_*` tests pass except the five that read the shipped content root. `build_help` pins that the top-level help lists only the original commands. `export_glb` covers the export options and compares default output with files in `tests/goldens/export/` byte for byte.
+The format and the error messages are designed for agents. [`.agents/skills/voxel-asset-creation`](.agents/skills/voxel-asset-creation/SKILL.md) describes a workflow where one agent writes the model and renders previews, and an independent reviewer agent critiques only the images until the design holds up.
 
-## Users
+## Development
 
-- IdleSettler (`cargo xtask assets`) calls `export … --mesh merged --unit block --colors linear --ao vertex`.
+```sh
+cargo test
+```
+
+The test suite is self-contained. Fixtures live in `tests/fixtures/`, and golden images and exports in `tests/goldens/`. The golden contact sheet in `tests/goldens/reference-asymmetric-sheet.png` is a human-reviewed picture: if it stops matching, re-shooting it means asking for a new review, not repairing the test.
+
+### Compatibility
+
+Other projects run this tool in their build pipelines. New behaviour is added as new options or commands. Existing defaults, file formats and output stay as they are.

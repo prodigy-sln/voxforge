@@ -1,9 +1,8 @@
 //! What a refusal says.
 //!
-//! One struct for every refusal this tool makes, shaped after
-//! `mc_core::block::source::DefinitionFault` field for field — including why
-//! `part` is a plain `String`: a malformed declaration may carry a name that
-//! does not parse, and quoting it back verbatim is the point.
+//! One struct for every refusal this tool makes. `part` is a plain `String`
+//! because a malformed declaration may carry a name that does not parse, and
+//! quoting it back verbatim is the point.
 //!
 //! The consumer of these messages is an AI agent repairing its own input from
 //! the message alone, so every refusal names where it happened, which element it

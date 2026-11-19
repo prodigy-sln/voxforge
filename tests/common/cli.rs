@@ -301,11 +301,7 @@ pub fn document_at(
 
 /// A path inside the repository, from this crate's own manifest.
 ///
-/// Not the working directory: a test's working directory is the package root,
-/// and the committed models and materials live two levels above it.
 #[must_use]
 pub fn repository_path(relative: &str) -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../..")
-        .join(relative)
+    Path::new(env!("CARGO_MANIFEST_DIR")).join(relative)
 }

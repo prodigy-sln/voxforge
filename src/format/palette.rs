@@ -1,9 +1,7 @@
 //! What each character in a grid means.
 //!
 //! The namespaced id rule is reused rather than restated: `MaterialKey` is a
-//! newtype over `mc_core::id::NamespacedId`, so the diagnostic an author reads
-//! here is the same one the block loader gives them, and there is no second
-//! opinion about what a namespaced id is.
+//! newtype over [`NamespacedId`](crate::shared::id::NamespacedId).
 
 use std::collections::BTreeMap;
 

@@ -7,7 +7,7 @@ rust-version = "1.85"
 [dependencies]
 glam = "0.29.0"
 image = { version = "0.25.0", default-features = false, features = ["png"] }
-mc-core = { path = "../MyCraft/crates/mc-core" }
+thiserror = "2"
 clap = { version = "4.5", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.8"

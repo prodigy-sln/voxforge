@@ -3,9 +3,9 @@
 //!
 //! A palette is the only place a material key appears in a document, so it is
 //! also the only place the namespaced id rule reaches the art. The rule itself
-//! is reused rather than reimplemented — `mc_core::id::NamespacedId` already
-//! produces the diagnostics this project's block loader documents, and a second
-//! implementation would be a second opinion about what a namespaced id is.
+//! is reused rather than reimplemented: `voxforge::shared::id::NamespacedId`
+//! produces the diagnostics, and a second implementation would be a second
+//! opinion about what a namespaced id is.
 
 mod common;
 

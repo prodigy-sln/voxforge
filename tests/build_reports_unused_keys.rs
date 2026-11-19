@@ -23,7 +23,7 @@ use std::error::Error;
 
 use common::TestResult;
 use common::texture::GREY;
-use mc_core::content::TEXTURE_EDGE;
+use voxforge::shared::TEXTURE_EDGE;
 use voxforge::inspect::ExitCode;
 
 use build::{MANIFEST_FILE, Root, block_of, built, entry, manifest};

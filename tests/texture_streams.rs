@@ -25,13 +25,13 @@ mod common;
 
 use std::error::Error;
 use std::fs;
+use std::num::NonZeroU32;
 use std::path::PathBuf;
 
 use common::cli::{
     Exited, Survival, Written, built_binary, document_at, invoke, nothing_missing, survival,
     unnamed_in, written,
 };
-use common::preview::EIGHT_PER_VOXEL;
 use common::texture::{GRADIENT, GREY, Leg, Tone, material_text, named_in_order};
 use common::tiles::{gradient_depth, narrow_slab, solid_block};
 use common::{Mention, TestResult, shown};
@@ -43,6 +43,12 @@ use voxforge::material::load_materials;
 use voxforge::render::{View, render_texture, to_png};
 use voxforge::texture::AxisAlignedView;
 use voxforge::volume::{StateSelection, assemble};
+
+/// The CLI's default `--pixels-per-voxel`.
+const DEFAULT_PIXELS_PER_VOXEL: NonZeroU32 = match NonZeroU32::new(24) {
+    Some(scale) => scale,
+    None => NonZeroU32::MIN,
+};
 
 /// The palette a one-grey fixture is painted from.
 const PLAIN: [Tone; 1] = [GREY];
@@ -121,7 +127,7 @@ impl Workspace {
         let model = load_document(&self.document)?;
         let materials = load_materials(&self.materials)?;
         let volume = assemble(&model, &StateSelection::default())?;
-        let image = render_texture(&volume, &materials, face, EIGHT_PER_VOXEL);
+        let image = render_texture(&volume, &materials, face, DEFAULT_PIXELS_PER_VOXEL);
         Ok(to_png(&image, Origin::new(self.face_path(face)))?)
     }
 

@@ -13,7 +13,7 @@ When creating voxel assets for games using VoxForge, follow this multi-agent wor
 
 ### 1. Author the Model
 * Write or modify the `.mcvox` document in your workspace.
-* For the format specification and instructions on how to use the `.mcvox` format, refer to: `E:\_PROJEKTE\MyCraft\docs\modding\voxel-models.md`
+* For the format specification and instructions on how to use the `.mcvox` format, refer to [`docs/format.md`](../../../docs/format.md) in this repository.
 * Ensure you are using the correct materials defined in the project's `materials` directory.
 
 ### 2. Generate PNG Previews

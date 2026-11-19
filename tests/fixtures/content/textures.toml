@@ -1,0 +1,45 @@
+# Test fixture: a texture-set manifest. `voxforge build textures.toml` bakes the
+# named face of each model into a PNG under `textures/`.
+#
+# `pixels_per_voxel = 1` makes each 16-voxel block face a 16-texel texture. One
+# model can paint several keys: `base:dirt` is the grass block's underside.
+
+output           = "textures"
+materials        = "materials"
+blocks           = "blocks"
+pixels_per_voxel = 1
+
+[[texture]]
+key   = "base:grass_top"
+model = "models/grass-block.mcvox"
+face  = "top"
+
+[[texture]]
+key   = "base:dirt"
+model = "models/grass-block.mcvox"
+face  = "bottom"
+
+[[texture]]
+key   = "base:grass_side_north"
+model = "models/grass-block.mcvox"
+face  = "back"
+
+[[texture]]
+key   = "base:grass_side_south"
+model = "models/grass-block.mcvox"
+face  = "front"
+
+[[texture]]
+key   = "base:grass_side_east"
+model = "models/grass-block.mcvox"
+face  = "right"
+
+[[texture]]
+key   = "base:grass_side_west"
+model = "models/grass-block.mcvox"
+face  = "left"
+
+[[texture]]
+key   = "base:stone"
+model = "models/stone-block.mcvox"
+face  = "front"

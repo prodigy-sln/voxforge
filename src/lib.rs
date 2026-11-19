@@ -17,6 +17,7 @@ pub mod inspect;
 pub mod material;
 pub mod name;
 pub mod render;
+pub mod shared;
 pub mod texture;
 pub mod volume;
 pub mod gltf_export;

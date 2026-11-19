@@ -23,9 +23,9 @@ use std::io::Write;
 use std::num::NonZeroU32;
 use std::path::{Path, PathBuf};
 
-use mc_core::art::{INDEX_FILE_NAME, IndexEntry, TextureSetIndex, folded_sources};
-use mc_core::content::TEXTURE_EDGE;
-use mc_core::id::TextureKey;
+use crate::shared::TEXTURE_EDGE;
+use crate::shared::art::{INDEX_FILE_NAME, IndexEntry, TextureSetIndex, folded_sources};
+use crate::shared::id::TextureKey;
 
 use super::{said, written_together};
 use crate::fault::{Fault, Origin};

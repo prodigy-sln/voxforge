@@ -49,7 +49,7 @@ const TWO_PER_VOXEL: NonZeroU32 = match NonZeroU32::new(2) {
 /// The view every preview in this file is taken from.
 const FROM: View = View::IsoFl;
 
-/// A colour no file under `content/base/materials` declares.
+/// A colour no file under `tests/fixtures/content/materials` declares.
 const CYAN: &str = "#00c8ff";
 
 /// A second such colour, so that two material directories disagree about the
@@ -60,9 +60,9 @@ const AMBER: &str = "#ffb000";
 fn a_document_outside_the_models_directory_renders_the_same_image_as_the_one_inside_it()
 -> TestResult {
     let temp = TempDir::new()?;
-    let inside = repository_path("content/base/models/reference-asymmetric.mcvox");
+    let inside = repository_path("tests/fixtures/content/models/reference-asymmetric.mcvox");
     let outside = document_at(&temp, "elsewhere.mcvox", &fs::read_to_string(&inside)?)?;
-    let materials = repository_path("content/base/materials");
+    let materials = repository_path("tests/fixtures/content/materials");
 
     let within = preview_of(&inside, &temp.path().join("within.png"), &materials, &[])?;
     let beyond = preview_of(&outside, &temp.path().join("beyond.png"), &materials, &[])?;

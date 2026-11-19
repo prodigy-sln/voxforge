@@ -24,7 +24,7 @@ use build::{
     CUBE_MODEL, FIRST_KEY, MANIFEST_FILE, block_of, built, files_in, fingerprinted, image_named,
     root_of_one_cube, two_faces_of_the_cube,
 };
-use mc_core::content::TEXTURE_EDGE;
+use voxforge::shared::TEXTURE_EDGE;
 
 /// Bytes no PNG encoder produces, put where an image is so that a rebuild
 /// announces itself.

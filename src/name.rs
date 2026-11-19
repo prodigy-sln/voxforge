@@ -1,13 +1,10 @@
 //! The two namespaced names VoxForge introduces.
 //!
-//! Both are newtypes over [`NamespacedId`] rather than reuses of
-//! `mc_core::id::BlockName`: `namespaced.rs` argues that types over one rule are
-//! deliberately not interchangeable, and a model is not a block, so reusing
-//! `BlockName` here would be that file's own argument ignored. Materials are not
-//! engine content yet, which is why both types live in this crate; the day they
-//! become engine content, they move.
+//! Both are newtypes over [`NamespacedId`], deliberately not interchangeable
+//! with each other or with [`TextureKey`](crate::shared::id::TextureKey): handing
+//! one where another is expected is a compile error.
 
-use mc_core::id::{NamespacedId, NamespacedIdError};
+use crate::shared::id::{NamespacedId, NamespacedIdError};
 
 /// The namespaced key a material is declared under, such as `base:oak_plank`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]

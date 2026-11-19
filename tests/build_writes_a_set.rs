@@ -19,7 +19,7 @@ use std::collections::BTreeMap;
 use std::error::Error;
 use std::path::Path;
 
-use mc_core::art::INDEX_FILE_NAME;
+use voxforge::shared::art::INDEX_FILE_NAME;
 use tempfile::TempDir;
 use voxforge::inspect::ExitCode;
 
