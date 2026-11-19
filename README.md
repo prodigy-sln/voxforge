@@ -24,6 +24,11 @@ It is built around a short loop: **describe → render → look → fix**. Every
   <sub>One <code>voxforge preview</code> call: every canonical view of a model on one sheet.</sub>
 </p>
 
+<p align="center">
+  <img src="https://cdn.prodigy.solutions/voxforge/fox-run.gif" alt="Animated voxel fox running over scrolling grass" width="300"><br>
+  <sub>Models are just text, so a script can generate them too. Each frame of this run cycle is a generated <code>.mcvox</code> rendered with <code>voxforge preview --view iso-fr</code>.</sub>
+</p>
+
 ## Quick start
 
 VoxForge is a Rust project (edition 2024, Rust 1.85 or newer).
@@ -158,6 +163,11 @@ emissive = 0.8
 ```
 
 Every `*.toml` file in the materials directory is loaded. Palettes refer to materials by name, so many models stay on one consistent palette.
+
+<p align="center">
+  <img src="https://cdn.prodigy.solutions/voxforge/blocks.png" alt="Twelve 16×16×16 voxel blocks: grass, dirt, stone, oak planks, oak log, obsidian, copper, iron, royal, amber lamp, neon panel and portal" width="100%"><br>
+  <sub>16³ blocks built only from the bundled materials. Emissive materials such as the amber lamp, neon and portal glow through the shading.</sub>
+</p>
 
 ## Using VoxForge with AI agents
 
