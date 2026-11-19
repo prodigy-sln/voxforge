@@ -259,7 +259,7 @@ fn default_export_of_human_matches_the_golden() -> TestResult {
 
 #[test]
 fn default_export_of_horse_matches_the_golden() -> TestResult {
-    assert_matches_golden(&project_path("horse.mcvox"), "horse.glb")
+    assert_matches_golden(&project_path("assets/models/horse.mcvox"), "horse.glb")
 }
 
 #[test]
