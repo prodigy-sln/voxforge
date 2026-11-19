@@ -173,6 +173,17 @@ Every `*.toml` file in the materials directory is loaded. Palettes refer to mate
 
 The format and the error messages are designed for agents. [`.agents/skills/voxel-asset-creation`](.agents/skills/voxel-asset-creation/SKILL.md) describes a workflow where one agent writes the model and renders previews, and an independent reviewer agent critiques only the images until the design holds up.
 
+## Examples
+
+[`examples/`](examples/) holds the scripts behind the README images. Both need Python 3.11+, Pillow and a release build:
+
+```sh
+python examples/blocks.py   --out out/blocks   # 12 sample blocks and the sheet above
+python examples/fox_run.py  --out out/fox      # the running fox GIF
+```
+
+They show how to generate `.mcvox` documents from code and render them in bulk. Hand-authored models they build on live in `examples/models/`.
+
 ## Development
 
 ```sh
