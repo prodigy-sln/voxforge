@@ -195,3 +195,7 @@ The test suite is self-contained. Fixtures live in `tests/fixtures/`, and golden
 ### Compatibility
 
 Other projects run this tool in their build pipelines. New behaviour is added as new options or commands. Existing defaults, file formats and output stay as they are.
+
+## License
+
+VoxForge is released into the public domain under [the Unlicense](LICENSE). That covers the code, the bundled materials, the models and the documentation. Use it for anything, including commercial work, with no attribution required.
