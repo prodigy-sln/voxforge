@@ -25,7 +25,7 @@ It is built around a short loop: **describe → render → look → fix**. Every
 </p>
 
 <p align="center">
-  <img src="https://cdn.prodigy.solutions/voxforge/fox-run.gif" alt="Animated voxel fox running over scrolling grass" width="300"><br>
+  <img src="https://cdn.prodigy.solutions/voxforge/fox-run-2.gif" alt="Animated voxel fox running over scrolling grass" width="300"><br>
   <sub>Models are just text, so a script can generate them too. Each frame of this run cycle is a generated <code>.mcvox</code> rendered with <code>voxforge preview --view iso-fr</code>.</sub>
 </p>
 
